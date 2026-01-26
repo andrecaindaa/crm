@@ -4,6 +4,13 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\EntityController;
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::resource('entities', EntityController::class);
+});
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
