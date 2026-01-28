@@ -6,6 +6,14 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\PersonController;
+use App\Http\Controllers\DealController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/deals', [DealController::class, 'index'])->name('deals.index');
+    Route::post('/deals', [DealController::class, 'store'])->name('deals.store');
+    Route::patch('/deals/{deal}/stage', [DealController::class, 'updateStage']);
+});
+
 
 Route::middleware(['auth'])->group(function () {
     Route::resource('people', PersonController::class);
