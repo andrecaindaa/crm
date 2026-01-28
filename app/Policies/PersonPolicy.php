@@ -38,15 +38,12 @@ class PersonPolicy
      */
     public function update(User $user, Person $person): bool
     {
-        return false;
+        return $person->user_id === $user->id;
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Person $person): bool
     {
-        return false;
+        return $person->user_id === $user->id;
     }
 
     /**

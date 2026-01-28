@@ -13,6 +13,13 @@ class CalendarEvent extends Model
         'end_at',
         'location',
         'owner_id',
+        'eventable_id',
+        'eventable_type',
+    ];
+
+    protected $casts = [
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
     ];
 
     public function eventable()

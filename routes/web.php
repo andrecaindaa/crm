@@ -7,6 +7,16 @@ use Inertia\Inertia;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\PersonController;
 use App\Http\Controllers\DealController;
+use App\Http\Controllers\CalendarEventController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/calendar', [CalendarEventController::class, 'index'])
+        ->name('calendar.index');
+
+    Route::post('/calendar', [CalendarEventController::class, 'store'])
+        ->name('calendar.store');
+});
+
 
 Route::get('/deals/create', [DealController::class, 'create'])
     ->name('deals.create');

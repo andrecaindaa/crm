@@ -8,12 +8,9 @@ use Illuminate\Auth\Access\Response;
 
 class CalendarEventPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
     public function view(User $user, CalendarEvent $event): bool
@@ -21,43 +18,18 @@ class CalendarEventPolicy
         return $event->owner_id === $user->id;
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, CalendarEvent $calendarEvent): bool
+    public function update(User $user, CalendarEvent $event): bool
     {
-        return false;
+        return $event->owner_id === $user->id;
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, CalendarEvent $calendarEvent): bool
+    public function delete(User $user, CalendarEvent $event): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, CalendarEvent $calendarEvent): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, CalendarEvent $calendarEvent): bool
-    {
-        return false;
+        return $event->owner_id === $user->id;
     }
 }
