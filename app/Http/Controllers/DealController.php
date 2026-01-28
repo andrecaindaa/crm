@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Deal;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Entity;
+use App\Models\Person;
+
 
 class DealController extends Controller
 {
@@ -65,4 +68,15 @@ class DealController extends Controller
 
         return back();
     }
+
+    public function create()
+    {
+        $this->authorize('create', Deal::class);
+
+        return Inertia::render('Deals/Create', [
+            'entities' => Entity::where('user_id', auth()->id())->get(),
+            'people' => Person::where('user_id', auth()->id())->get(),
+        ]);
+    }
+
 }

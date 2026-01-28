@@ -8,6 +8,10 @@ use App\Http\Controllers\EntityController;
 use App\Http\Controllers\PersonController;
 use App\Http\Controllers\DealController;
 
+Route::get('/deals/create', [DealController::class, 'create'])
+    ->name('deals.create');
+
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/deals', [DealController::class, 'index'])->name('deals.index');
     Route::post('/deals', [DealController::class, 'store'])->name('deals.store');
