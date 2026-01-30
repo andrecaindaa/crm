@@ -31,4 +31,22 @@ class Deal extends Model
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
+
+    public function proposals()
+    {
+        return $this->hasMany(DealProposal::class);
+    }
+
+    public static function stages()
+    {
+        return config('deals.stages');
+    }
+
+    public function isInStage(string $stage): bool
+    {
+        return $this->stage === $stage;
+    }
+
+
+
 }
