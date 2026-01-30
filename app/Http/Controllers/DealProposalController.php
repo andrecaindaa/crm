@@ -10,9 +10,6 @@ use Illuminate\Support\Facades\Mail;
 
 class DealProposalController extends Controller
 {
-    /**
-     * Upload da proposta
-     */
     public function store(Request $request, Deal $deal)
     {
         $this->authorize('update', $deal);
@@ -32,9 +29,6 @@ class DealProposalController extends Controller
         return back();
     }
 
-    /**
-     * ENVIO DA PROPOSTA POR EMAIL
-     */
     public function send(Request $request, DealProposal $proposal)
     {
         $this->authorize('update', $proposal->deal);
