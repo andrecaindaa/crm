@@ -7,6 +7,7 @@ use App\Models\Entity;
 use App\Models\Person;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Support\DealTimelineBuilder;
 
 class DealController extends Controller
 {
@@ -31,12 +32,16 @@ class DealController extends Controller
     {
         $this->authorize('view', $deal);
 
+        $deal->load([
+            'entity',
+            'person',
+            'proposals.sender',
+            'followUps.sender',
+        ]);
+
         return Inertia::render('Deals/Show', [
-            'deal' => $deal->load([
-                'entity',
-                'person',
-                'proposals.sender',
-            ]),
+            'deal' => $deal,
+            'timeline' => DealTimelineBuilder::build($deal),
         ]);
     }
 
