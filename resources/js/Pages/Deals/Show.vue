@@ -136,22 +136,11 @@ function sendProposal(proposalId) {
             </ul>
         </section>
 
-         <!-- CRONOLOGIA-->
+         <!-- CRONOLOGIA
         <section class="mt-10">
             <h2 class="font-semibold mb-4">Cronologia</h2>
 
             <ul class="space-y-4">
-                <li class="flex gap-3">
-                    <span class="text-gray-400">📄</span>
-                    <div>
-                        <p class="text-sm">
-                            <strong>Proposta carregada</strong>
-                        </p>
-                        <p class="text-xs text-gray-500">
-                            Exemplo de evento (placeholder)
-                        </p>
-                    </div>
-                </li>
 
                 <li class="flex gap-3">
                     <span class="text-gray-400">✉️</span>
@@ -166,5 +155,47 @@ function sendProposal(proposalId) {
                 </li>
             </ul>
         </section>
+-->
+
+        <section class="mt-10">
+    <h2 class="font-semibold mb-4">Cronologia</h2>
+
+    <ul class="space-y-4">
+        <li
+            v-for="item in $page.props.timeline"
+            :key="item.type + item.date"
+            class="flex gap-3"
+        >
+            <span class="text-gray-400">
+                <span v-if="item.type === 'deal_created'">📌</span>
+                <span v-else-if="item.type === 'proposal_uploaded'">📄</span>
+                <span v-else-if="item.type === 'proposal_sent'">✉️</span>
+                <span v-else-if="item.type === 'follow_up'">🔁</span>
+            </span>
+
+            <div>
+                <p class="text-sm">
+                    <strong>{{ item.label }}</strong>
+                    <span v-if="item.meta?.name">
+                        – {{ item.meta.name }}
+                    </span>
+                </p>
+
+                <p class="text-xs text-gray-500">
+                    {{ item.user?.name ?? 'Sistema' }}
+                    · {{ item.date }}
+                </p>
+
+                <p
+                    v-if="item.meta?.body"
+                    class="text-xs text-gray-600 mt-1"
+                >
+                    "{{ item.meta.body }}"
+                </p>
+            </div>
+        </li>
+    </ul>
+</section>
+
     </CrmLayout>
 </template>

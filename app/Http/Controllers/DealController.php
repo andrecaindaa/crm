@@ -35,6 +35,7 @@ class DealController extends Controller
         $deal->load([
             'entity',
             'person',
+            'owner',
             'proposals.sender',
             'followUps.sender',
         ]);

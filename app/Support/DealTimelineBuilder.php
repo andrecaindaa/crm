@@ -12,64 +12,53 @@ class DealTimelineBuilder
         $items = collect();
 
         /**
-         * Propostas carregadas
+         * Criação do negócio
+         */
+        $items->push([
+            'type' => 'deal_created',
+            'label' => 'Negócio criado',
+            'date' => $deal->created_at,
+            'user' => $deal->owner,
+        ]);
+
+        /**
+         * Propostas
          */
         foreach ($deal->proposals as $proposal) {
             $items->push([
-                'type' => 'proposal',
-                'title' => 'Proposta adicionada',
-                'description' => $proposal->original_name,
+                'type' => 'proposal_uploaded',
+                'label' => 'Proposta adicionada',
                 'date' => $proposal->created_at,
-                'user' => null,
                 'meta' => [
-                    'proposal_id' => $proposal->id,
+                    'name' => $proposal->original_name,
                 ],
             ]);
 
             if ($proposal->sent_at) {
                 $items->push([
-                    'type' => 'email',
-                    'title' => 'Proposta enviada por email',
-                    'description' => 'Email enviado ao cliente',
+                    'type' => 'proposal_sent',
+                    'label' => 'Proposta enviada por email',
                     'date' => $proposal->sent_at,
-                    'user' => $proposal->sender
-                        ? [
-                            'id' => $proposal->sender->id,
-                            'name' => $proposal->sender->name,
-                        ]
-                        : null,
-                    'meta' => [
-                        'proposal_id' => $proposal->id,
-                    ],
+                    'user' => $proposal->sender,
                 ]);
             }
         }
 
         /**
-         * Follow-ups automáticos
+         * Follow-ups
          */
-        foreach ($deal->followUps ?? [] as $followUp) {
+        foreach ($deal->followUps as $followUp) {
             $items->push([
                 'type' => 'follow_up',
-                'title' => 'Follow-up automático',
-                'description' => $followUp->email_body,
+                'label' => 'Follow-up enviado',
                 'date' => $followUp->sent_at,
-                'user' => $followUp->sender
-                    ? [
-                        'id' => $followUp->sender->id,
-                        'name' => $followUp->sender->name,
-                    ]
-                    : null,
-                'meta' => [],
+                'user' => $followUp->sender,
+                'meta' => [
+                    'body' => $followUp->body,
+                ],
             ]);
         }
 
-        /**
-         * Ordenação final (mais recente primeiro)
-         */
-        return $items
-            ->filter(fn ($item) => $item['date'])
-            ->sortByDesc('date')
-            ->values();
+        return $items->sortBy('date')->values();
     }
 }
