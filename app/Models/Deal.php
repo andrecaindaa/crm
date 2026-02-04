@@ -37,6 +37,12 @@ class Deal extends Model
         return $this->hasMany(DealProposal::class);
     }
 
+
+    public function followUps()
+    {
+        return $this->hasMany(DealFollowUp::class);
+    }
+
     public static function stages(): array
     {
         return config('deals.stages');
@@ -45,10 +51,5 @@ class Deal extends Model
     public function isInStage(string $stage): bool
     {
         return $this->stage === $stage;
-    }
-
-    public function followUp()
-    {
-        return $this->hasOne(DealFollowUp::class);
     }
 }
