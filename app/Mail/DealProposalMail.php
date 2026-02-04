@@ -6,6 +6,7 @@ use App\Models\DealProposal;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 
 class DealProposalMail extends Mailable
 {
@@ -25,8 +26,12 @@ class DealProposalMail extends Mailable
         return $this
             ->subject('Proposta Comercial')
             ->view('emails.deal-proposal')
+            ->with([
+                'body' => $this->body,
+                'deal' => $this->proposal->deal,
+            ])
             ->attach(
-                storage_path('app/' . $this->proposal->file_path),
+                Storage::path($this->proposal->file_path),
                 [
                     'as' => $this->proposal->original_name,
                 ]
