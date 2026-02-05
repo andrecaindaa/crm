@@ -5,7 +5,19 @@ import { useForm, usePage } from '@inertiajs/vue3'
 
 const props = defineProps({
     deal: Object,
+timeline: Array,
 })
+
+const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('pt-PT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })
+}
 
 const user = usePage().props.auth.user
 
@@ -162,37 +174,53 @@ function sendProposal(proposalId) {
 
     <ul class="space-y-4">
         <li
-            v-for="item in $page.props.timeline"
-            :key="item.type + item.date"
+            v-for="(item, index) in timeline"
+            :key="`timeline-${item.type}-${item.id || index}`"
             class="flex gap-3"
         >
-            <span class="text-gray-400">
+            <!-- Ícone -->
+            <span class="text-gray-400 mt-0.5">
                 <span v-if="item.type === 'deal_created'">📌</span>
                 <span v-else-if="item.type === 'proposal_uploaded'">📄</span>
                 <span v-else-if="item.type === 'proposal_sent'">✉️</span>
                 <span v-else-if="item.type === 'follow_up'">🔁</span>
+                <span v-else-if="item.type === 'stage_changed'">🔄</span>
+                <span v-else>•</span>
             </span>
 
-            <div>
+            <div class="flex-1">
                 <p class="text-sm">
                     <strong>{{ item.label }}</strong>
-                    <span v-if="item.meta?.name">
+                    <span v-if="item.meta?.name" class="text-gray-600">
                         – {{ item.meta.name }}
                     </span>
                 </p>
 
                 <p class="text-xs text-gray-500">
                     {{ item.user?.name ?? 'Sistema' }}
-                    · {{ item.date }}
+                    · {{ formatDate(item.date) }}
                 </p>
 
+                <!-- Corpo do email/observação -->
                 <p
                     v-if="item.meta?.body"
-                    class="text-xs text-gray-600 mt-1"
+                    class="text-xs text-gray-600 mt-1 whitespace-pre-line"
                 >
                     "{{ item.meta.body }}"
                 </p>
+
+                <!-- Mudança de estado -->
+                <p
+                    v-if="item.meta?.from"
+                    class="text-xs text-gray-600 mt-1"
+                >
+                    Estado: {{ item.meta.from }} → {{ item.meta.to }}
+                </p>
             </div>
+        </li>
+
+        <li v-if="!timeline?.length" class="text-gray-500 text-sm italic">
+            Ainda não existem eventos registados.
         </li>
     </ul>
 </section>
