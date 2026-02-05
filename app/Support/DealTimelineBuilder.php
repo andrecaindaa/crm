@@ -59,6 +59,20 @@ class DealTimelineBuilder
             ]);
         }
 
+        /**
+         * Mudanças de estado
+         */
+        foreach ($deal->activities as $activity) {
+            $items->push([
+                'type' => $activity->type,
+                'label' => $activity->label,
+                'date' => $activity->created_at,
+                'user' => $activity->user,
+                'meta' => $activity->meta,
+            ]);
+        }
+
+
         return $items->sortBy('date')->values();
     }
 }

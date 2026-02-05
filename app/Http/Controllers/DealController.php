@@ -8,6 +8,7 @@ use App\Models\Person;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Support\DealTimelineBuilder;
+use App\Models\DealActivity;
 
 class DealController extends Controller
 {
@@ -38,7 +39,9 @@ class DealController extends Controller
             'owner',
             'proposals.sender',
             'followUps.sender',
+            'activities.user',
         ]);
+
 
         return Inertia::render('Deals/Show', [
             'deal' => $deal,
@@ -76,16 +79,35 @@ class DealController extends Controller
         return redirect()->route('deals.index');
     }
 
-    public function updateStage(Request $request, Deal $deal)
-    {
-        $this->authorize('update', $deal);
+   public function updateStage(Request $request, Deal $deal)
+{
+    $this->authorize('update', $deal);
 
-        $data = $request->validate([
-            'stage' => 'required|string|in:' . implode(',', array_keys(Deal::stages())),
-        ]);
+    $data = $request->validate([
+        'stage' => 'required|string|in:' . implode(',', array_keys(Deal::stages())),
+    ]);
 
-        $deal->update($data);
-
+    if ($deal->stage === $data['stage']) {
         return back();
     }
+
+    $oldStage = $deal->stage;
+
+    $deal->update($data);
+
+    DealActivity::create([
+        'deal_id' => $deal->id,
+        'user_id' => auth()->id(),
+        'type' => 'stage_changed',
+        'label' => 'Estado alterado',
+        'meta' => [
+            'from' => $oldStage,
+            'to' => $data['stage'],
+        ],
+        'created_at' => now(),
+    ]);
+
+    return back();
+}
+
 }

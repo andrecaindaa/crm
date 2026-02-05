@@ -52,4 +52,10 @@ class Deal extends Model
     {
         return $this->stage === $stage;
     }
+
+    public function activities()
+    {
+        return $this->hasMany(DealActivity::class);
+    }
+
 }
