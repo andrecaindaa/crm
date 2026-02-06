@@ -10,6 +10,10 @@ use App\Http\Controllers\PersonController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\DealProposalController;
 use App\Http\Controllers\CalendarEventController;
+use App\Http\Controllers\DealFollowUpController;
+
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -55,6 +59,13 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/deals/{deal}/stage', [DealController::class, 'updateStage'])
         ->name('deals.stage');
+
+        /*
+| Deal Follow-ups
+*/
+Route::post('/deals/{deal}/follow-ups', [DealFollowUpController::class, 'store'])
+    ->name('deals.followups.store');
+
 
     /*
     | Deal Proposals
