@@ -169,61 +169,63 @@ function sendProposal(proposalId) {
         </section>
 -->
 
-        <section class="mt-10">
+      <!-- CRONOLOGIA -->
+<section class="mt-10">
     <h2 class="font-semibold mb-4">Cronologia</h2>
 
-    <ul class="space-y-4">
+    <ul v-if="timeline.length" class="space-y-4">
         <li
-            v-for="(item, index) in timeline"
-            :key="`timeline-${item.type}-${item.id || index}`"
-            class="flex gap-3"
+            v-for="item in timeline"
+            :key="item.type + item.date"
+            class="flex gap-3 items-start"
         >
             <!-- Ícone -->
-            <span class="text-gray-400 mt-0.5">
+            <div class="mt-0.5">
                 <span v-if="item.type === 'deal_created'">📌</span>
                 <span v-else-if="item.type === 'proposal_uploaded'">📄</span>
                 <span v-else-if="item.type === 'proposal_sent'">✉️</span>
                 <span v-else-if="item.type === 'follow_up'">🔁</span>
                 <span v-else-if="item.type === 'stage_changed'">🔄</span>
                 <span v-else>•</span>
-            </span>
+            </div>
 
+            <!-- Conteúdo -->
             <div class="flex-1">
                 <p class="text-sm">
                     <strong>{{ item.label }}</strong>
-                    <span v-if="item.meta?.name" class="text-gray-600">
+
+                    <span v-if="item.meta?.name">
                         – {{ item.meta.name }}
+                    </span>
+
+                    <span
+                        v-if="item.meta?.from && item.meta?.to"
+                        class="text-gray-500"
+                    >
+                        ({{ item.meta.from }} → {{ item.meta.to }})
                     </span>
                 </p>
 
                 <p class="text-xs text-gray-500">
                     {{ item.user?.name ?? 'Sistema' }}
-                    · {{ formatDate(item.date) }}
+                    · {{ new Date(item.date).toLocaleString() }}
                 </p>
 
-                <!-- Corpo do email/observação -->
                 <p
                     v-if="item.meta?.body"
-                    class="text-xs text-gray-600 mt-1 whitespace-pre-line"
+                    class="text-xs text-gray-600 mt-1 italic"
                 >
                     "{{ item.meta.body }}"
                 </p>
-
-                <!-- Mudança de estado -->
-                <p
-                    v-if="item.meta?.from"
-                    class="text-xs text-gray-600 mt-1"
-                >
-                    Estado: {{ item.meta.from }} → {{ item.meta.to }}
-                </p>
             </div>
         </li>
-
-        <li v-if="!timeline?.length" class="text-gray-500 text-sm italic">
-            Ainda não existem eventos registados.
-        </li>
     </ul>
+
+    <p v-else class="text-sm text-gray-500">
+        Ainda não existem eventos na cronologia.
+    </p>
 </section>
+
 
     </CrmLayout>
 </template>
