@@ -51,7 +51,7 @@ class DealTimelineBuilder
             $items->push([
                 'type' => 'follow_up',
                 'label' => 'Follow-up enviado',
-                'date' => $followUp->sent_at,
+                'date' => $followUp->sent_at ?? $followUp->created_at,
                 'user' => $followUp->sender,
                 'meta' => [
                     'body' => $followUp->body,
