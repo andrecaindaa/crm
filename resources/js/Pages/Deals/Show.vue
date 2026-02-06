@@ -3,6 +3,31 @@ import CrmLayout from '@/Layouts/CrmLayout.vue'
 import { ref } from 'vue'
 import { useForm, usePage } from '@inertiajs/vue3'
 
+
+import { onMounted } from 'vue'
+import axios from 'axios'
+
+const followUpTemplates = ref([])
+const followUpForm = useForm({
+    body: '',
+})
+
+onMounted(async () => {
+    const { data } = await axios.get('/follow-ups/templates')
+    followUpTemplates.value = data
+})
+
+function sendFollowUp() {
+    followUpForm.post(`/deals/${props.deal.id}/follow-ups`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            followUpForm.body = ''
+        },
+    })
+}
+
+
+
 const props = defineProps({
     deal: Object,
 timeline: Array,
@@ -148,6 +173,45 @@ function sendProposal(proposalId) {
             </ul>
         </section>
 
+
+<!-- FOLLOW-UP MANUAL -->
+<section class="mt-10">
+    <h2 class="font-semibold mb-3">Follow-up rápido</h2>
+
+    <div class="flex flex-col gap-3">
+        <select
+            class="border rounded p-2 text-sm"
+            @change="e => followUpForm.body = e.target.value"
+        >
+            <option value="">Selecionar mensagem pré-definida</option>
+            <option
+                v-for="(text, i) in followUpTemplates"
+                :key="i"
+                :value="text"
+            >
+                {{ text }}
+            </option>
+        </select>
+
+        <textarea
+            v-model="followUpForm.body"
+            rows="3"
+            class="border rounded p-2 text-sm"
+            placeholder="Mensagem de follow-up"
+        />
+
+        <button
+            @click="sendFollowUp"
+            class="self-start px-4 py-2 bg-black text-white rounded"
+            :disabled="followUpForm.processing || !followUpForm.body"
+        >
+            Enviar follow-up
+        </button>
+    </div>
+</section>
+
+
+
          <!-- CRONOLOGIA
         <section class="mt-10">
             <h2 class="font-semibold mb-4">Cronologia</h2>
@@ -208,7 +272,8 @@ function sendProposal(proposalId) {
 
                 <p class="text-xs text-gray-500">
                     {{ item.user?.name ?? 'Sistema' }}
-                    · {{ new Date(item.date).toLocaleString() }}
+                    · {{ item.date ? new Date(item.date).toLocaleString() : '' }}
+
                 </p>
 
                 <p
