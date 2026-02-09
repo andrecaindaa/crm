@@ -66,6 +66,10 @@ Route::middleware(['auth'])->group(function () {
 Route::post('/deals/{deal}/follow-ups', [DealFollowUpController::class, 'store'])
     ->name('deals.followups.store');
 
+    Route::get('/follow-ups/templates', [DealFollowUpController::class, 'templates'])
+    ->name('followups.templates');
+
+
 
     /*
     | Deal Proposals

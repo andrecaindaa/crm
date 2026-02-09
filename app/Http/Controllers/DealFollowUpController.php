@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\Mail;
 
 class DealFollowUpController extends Controller
 {
+    public function templates()
+    {
+        return response()->json(
+            config('followups.emails')
+        );
+    }
+
     public function store(Request $request, Deal $deal)
     {
         $this->authorize('update', $deal);
@@ -27,15 +34,15 @@ class DealFollowUpController extends Controller
             ]);
         }
 
-        // Enviar email
         Mail::to($email)->send(
             new DealFollowUpMail($deal, $data['body'])
         );
 
-        // Guardar follow-up (modo simples, sem agendamento ainda)
-        DealFollowUp::create([
+            DealFollowUp::create([
             'deal_id' => $deal->id,
-            'next_send_at' => now(), // reutilização segura
+            'sent_by' => auth()->id(),
+            'sent_at' => now(),
+            'next_send_at' => now(),
             'active' => false,
         ]);
 

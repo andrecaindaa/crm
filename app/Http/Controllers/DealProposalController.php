@@ -39,7 +39,13 @@ class DealProposalController extends Controller
 
         $email =
             $proposal->deal->person?->email
-            ?? $proposal->deal->entity?->email;
+            ?: $proposal->deal->entity?->email;
+
+        if (! $email) {
+            return back()->withErrors([
+                'email' => 'Este negócio não tem email associado.',
+            ]);
+        }
 
         Mail::to($email)->send(
             new DealProposalMail($proposal, $data['body'])

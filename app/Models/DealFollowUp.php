@@ -6,19 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class DealFollowUp extends Model
 {
-    protected $fillable = [
+   protected $fillable = [
         'deal_id',
-        'next_send_at',
+        'sent_by',
         'sent_at',
+        'next_send_at',
         'active',
-
     ];
 
     protected $casts = [
-        'next_send_at' => 'datetime',
         'sent_at' => 'datetime',
+        'next_send_at' => 'datetime',
         'active' => 'boolean',
-
     ];
 
     public function deal()
