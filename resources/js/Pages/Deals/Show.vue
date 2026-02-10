@@ -10,6 +10,7 @@ import axios from 'axios'
 const followUpTemplates = ref([])
 const followUpForm = useForm({
     body: '',
+     interval_days: 2,
 })
 
 onMounted(async () => {
@@ -179,6 +180,8 @@ function sendProposal(proposalId) {
     <h2 class="font-semibold mb-3">Follow-up rápido</h2>
 
     <div class="flex flex-col gap-3">
+
+        <!-- Templates -->
         <select
             class="border rounded p-2 text-sm"
             @change="e => followUpForm.body = e.target.value"
@@ -193,6 +196,23 @@ function sendProposal(proposalId) {
             </option>
         </select>
 
+        <!-- ⏱️ INTERVALO DE FOLLOW-UP -->
+        <div>
+            <label class="block text-sm font-medium mb-1">
+                Intervalo de follow-up
+            </label>
+
+            <select
+                v-model="followUpForm.interval_days"
+                class="border rounded p-2 text-sm w-full"
+            >
+                <option :value="2">A cada 2 dias</option>
+                <option :value="5">A cada 5 dias</option>
+                <option :value="7">A cada 7 dias</option>
+            </select>
+        </div>
+
+        <!-- Mensagem -->
         <textarea
             v-model="followUpForm.body"
             rows="3"
@@ -200,6 +220,7 @@ function sendProposal(proposalId) {
             placeholder="Mensagem de follow-up"
         />
 
+        <!-- Enviar -->
         <button
             @click="sendFollowUp"
             class="self-start px-4 py-2 bg-black text-white rounded"
@@ -209,6 +230,7 @@ function sendProposal(proposalId) {
         </button>
     </div>
 </section>
+
 
 
 

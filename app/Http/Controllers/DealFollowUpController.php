@@ -23,6 +23,7 @@ class DealFollowUpController extends Controller
 
         $data = $request->validate([
             'body' => 'required|string',
+            'interval_days' => 'required|in:2,5,7',
         ]);
 
         $email = $deal->person?->email
@@ -43,6 +44,7 @@ class DealFollowUpController extends Controller
             'sent_by' => auth()->id(),
             'sent_at' => now(),
             'next_send_at' => now(),
+             'interval_days' => $data['interval_days'],//
             'active' => false,
         ]);
 

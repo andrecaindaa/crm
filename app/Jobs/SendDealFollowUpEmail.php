@@ -46,7 +46,11 @@ class SendDealFollowUpEmail implements ShouldQueue
         // agenda próximo envio (2 dias depois)
         $this->followUp->update([
             'sent_at' => now(),
-            'next_send_at' => now()->addDays(2),
+            //'next_send_at' => now()->addDays(2),
+                'next_send_at' => now()->addDays(
+                 $this->followUp->interval_days
+                ),
+
         ]);
     }
 }

@@ -11,6 +11,7 @@ class DealFollowUp extends Model
         'sent_by',
         'sent_at',
         'next_send_at',
+        'interval_days',//
         'active',
     ];
 
