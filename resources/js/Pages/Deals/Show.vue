@@ -1,16 +1,28 @@
 <script setup>
 import CrmLayout from '@/Layouts/CrmLayout.vue'
-import { ref } from 'vue'
-import { useForm, usePage } from '@inertiajs/vue3'
-
-
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useForm, usePage, router } from '@inertiajs/vue3'
 import axios from 'axios'
 
+const props = defineProps({
+    deal: Object,
+    timeline: Array,
+    activeFollowUp: Object,
+})
+
+const user = usePage().props.auth.user
+
+/*
+|--------------------------------------------------------------------------
+| FOLLOW-UP
+|--------------------------------------------------------------------------
+*/
+
 const followUpTemplates = ref([])
+
 const followUpForm = useForm({
     body: '',
-     interval_days: 2,
+    interval_days: 2,
 })
 
 onMounted(async () => {
@@ -23,33 +35,31 @@ function sendFollowUp() {
         preserveScroll: true,
         onSuccess: () => {
             followUpForm.body = ''
+            router.reload({ only: ['timeline', 'activeFollowUp'] })
         },
     })
 }
 
+function cancelFollowUp() {
+    if (!props.activeFollowUp) return
 
-
-const props = defineProps({
-    deal: Object,
-timeline: Array,
-})
-
-const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('pt-PT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
+    followUpForm.patch(
+        `/follow-ups/${props.activeFollowUp.id}/cancel`,
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                router.reload({ only: ['timeline', 'activeFollowUp'] })
+            },
+        }
+    )
 }
 
-const user = usePage().props.auth.user
+/*
+|--------------------------------------------------------------------------
+| PROPOSTAS
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Upload de proposta
- */
 const uploadForm = useForm({
     proposal: null,
 })
@@ -60,9 +70,6 @@ function uploadProposal() {
     })
 }
 
-/**
- * Envio por email
- */
 const emailBody = ref(
 `Olá,
 
@@ -83,9 +90,13 @@ function sendProposal(proposalId) {
 
     sendForm.post(`/proposals/${proposalId}/send`, {
         preserveScroll: true,
+        onSuccess: () => {
+            router.reload({ only: ['timeline'] })
+        },
     })
 }
 </script>
+
 
 <template>
     <CrmLayout>
@@ -196,7 +207,7 @@ function sendProposal(proposalId) {
             </option>
         </select>
 
-        <!-- ⏱️ INTERVALO DE FOLLOW-UP -->
+        <!--  INTERVALO DE FOLLOW-UP -->
         <div>
             <label class="block text-sm font-medium mb-1">
                 Intervalo de follow-up
@@ -259,14 +270,15 @@ function sendProposal(proposalId) {
 <section class="mt-10">
     <h2 class="font-semibold mb-4">Cronologia</h2>
 
-    <ul v-if="timeline.length" class="space-y-4">
+    <ul v-if="timeline.length" class="space-y-6">
+
         <li
             v-for="item in timeline"
             :key="item.type + item.date"
-            class="flex gap-3 items-start"
+            class="flex gap-4 items-start border-l-2 pl-4 pb-4"
         >
             <!-- Ícone -->
-            <div class="mt-0.5">
+            <div class="text-lg mt-0.5">
                 <span v-if="item.type === 'deal_created'">📌</span>
                 <span v-else-if="item.type === 'proposal_uploaded'">📄</span>
                 <span v-else-if="item.type === 'proposal_sent'">✉️</span>
@@ -277,10 +289,10 @@ function sendProposal(proposalId) {
 
             <!-- Conteúdo -->
             <div class="flex-1">
-                <p class="text-sm">
-                    <strong>{{ item.label }}</strong>
+                <p class="text-sm font-medium">
+                    {{ item.label }}
 
-                    <span v-if="item.meta?.name">
+                    <span v-if="item.meta?.name" class="text-gray-600">
                         – {{ item.meta.name }}
                     </span>
 
@@ -292,15 +304,14 @@ function sendProposal(proposalId) {
                     </span>
                 </p>
 
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-gray-500 mt-1">
                     {{ item.user?.name ?? 'Sistema' }}
-                    · {{ item.date ? new Date(item.date).toLocaleString() : '' }}
-
+                    · {{ new Date(item.date).toLocaleString('pt-PT') }}
                 </p>
 
                 <p
                     v-if="item.meta?.body"
-                    class="text-xs text-gray-600 mt-1 italic"
+                    class="text-xs text-gray-600 mt-2 italic bg-gray-50 p-2 rounded"
                 >
                     "{{ item.meta.body }}"
                 </p>
@@ -312,6 +323,7 @@ function sendProposal(proposalId) {
         Ainda não existem eventos na cronologia.
     </p>
 </section>
+
 
 
     </CrmLayout>
