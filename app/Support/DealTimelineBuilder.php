@@ -12,7 +12,7 @@ class DealTimelineBuilder
         $items = collect();
 
         /**
-         * Criação do negócio
+         * 1. Criação do negócio
          */
         $items->push([
             'type' => 'deal_created',
@@ -22,9 +22,10 @@ class DealTimelineBuilder
         ]);
 
         /**
-         * Propostas
+         * 2. Propostas
          */
         foreach ($deal->proposals as $proposal) {
+
             $items->push([
                 'type' => 'proposal_uploaded',
                 'label' => 'Proposta adicionada',
@@ -45,13 +46,18 @@ class DealTimelineBuilder
         }
 
         /**
-         * Follow-ups
+         * 3. Follow-ups
          */
         foreach ($deal->followUps as $followUp) {
+
+            if (!$followUp->sent_at) {
+                continue;
+            }
+
             $items->push([
                 'type' => 'follow_up',
                 'label' => 'Follow-up enviado',
-                'date' => $followUp->sent_at ?? $followUp->created_at,
+                'date' => $followUp->sent_at,
                 'user' => $followUp->sender,
                 'meta' => [
                     'body' => $followUp->body,
@@ -60,7 +66,7 @@ class DealTimelineBuilder
         }
 
         /**
-         * Mudanças de estado
+         * 4. Mudanças de estado
          */
         foreach ($deal->activities as $activity) {
             $items->push([
@@ -72,7 +78,9 @@ class DealTimelineBuilder
             ]);
         }
 
-
-        return $items->sortBy('date')->values();
+        return $items
+            ->filter(fn ($item) => $item['date'])
+            ->sortByDesc('date')
+            ->values();
     }
 }
