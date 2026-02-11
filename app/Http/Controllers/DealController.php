@@ -42,10 +42,15 @@ class DealController extends Controller
             'activities.user',
         ]);
 
+    $activeFollowUp = $deal->followUps()
+        ->where('active', true)
+        ->orderByDesc('next_send_at')
+        ->first();
 
         return Inertia::render('Deals/Show', [
             'deal' => $deal,
             'timeline' => DealTimelineBuilder::build($deal),
+            'activeFollowUp' => $activeFollowUp,
         ]);
     }
 
