@@ -13,13 +13,18 @@ class DealActivity extends Model
         'user_id',
         'type',
         'label',
+        'description',
         'meta',
+        'due_at',
+        'completed_at',
         'created_at',
     ];
 
     protected $casts = [
         'meta' => 'array',
         'created_at' => 'datetime',
+        'due_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     public function deal()

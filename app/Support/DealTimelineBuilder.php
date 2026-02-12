@@ -66,17 +66,24 @@ class DealTimelineBuilder
         }
 
         /**
-         * 4. Mudanças de estado
-         */
-        foreach ($deal->activities as $activity) {
-            $items->push([
-                'type' => $activity->type,
-                'label' => $activity->label,
-                'date' => $activity->created_at,
-                'user' => $activity->user,
-                'meta' => $activity->meta,
-            ]);
-        }
+ * 4. Atividades do negócio
+ */
+foreach ($deal->activities as $activity) {
+
+    $items->push([
+        'type' => $activity->type,
+        'label' => $activity->label,
+        'date' => $activity->created_at,
+        'user' => $activity->user,
+        'meta' => [
+            ...($activity->meta ?? []),
+            'description' => $activity->description,
+            'due_at' => $activity->due_at,
+            'completed_at' => $activity->completed_at,
+        ],
+    ]);
+}
+
 
         return $items
             ->filter(fn ($item) => $item['date'])
