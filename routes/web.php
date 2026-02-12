@@ -11,6 +11,7 @@ use App\Http\Controllers\DealController;
 use App\Http\Controllers\DealProposalController;
 use App\Http\Controllers\CalendarEventController;
 use App\Http\Controllers\DealFollowUpController;
+use App\Http\Controllers\DealActivityController;
 
 
 
@@ -68,6 +69,19 @@ Route::post('/deals/{deal}/follow-ups', [DealFollowUpController::class, 'store']
 
     Route::get('/follow-ups/templates', [DealFollowUpController::class, 'templates'])
     ->name('followups.templates');
+
+    Route::patch('/follow-ups/{followUp}/cancel', [DealFollowUpController::class, 'cancel'])
+    ->name('followups.cancel');
+
+
+    /*
+| Deal Activities
+*/
+Route::post('/deals/{deal}/activities', [DealActivityController::class, 'store'])
+    ->name('deals.activities.store');
+
+Route::patch('/activities/{activity}/complete', [DealActivityController::class, 'complete'])
+    ->name('activities.complete');
 
 
 
