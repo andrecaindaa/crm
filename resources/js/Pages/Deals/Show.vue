@@ -1,8 +1,15 @@
 <script setup>
 import CrmLayout from '@/Layouts/CrmLayout.vue'
-import { ref, onMounted } from 'vue'
+import BaseModal from '@/Components/BaseModal.vue'
+import { ref, computed, onMounted } from 'vue'
 import { useForm, usePage, router } from '@inertiajs/vue3'
 import axios from 'axios'
+
+/*
+|--------------------------------------------------------------------------
+| PROPS
+|--------------------------------------------------------------------------
+*/
 
 const props = defineProps({
     deal: Object,
@@ -11,6 +18,55 @@ const props = defineProps({
 })
 
 const user = usePage().props.auth.user
+
+/*
+|--------------------------------------------------------------------------
+| FILTROS TIMELINE
+|--------------------------------------------------------------------------
+*/
+
+const timelineFilter = ref('all')
+
+const filteredTimeline = computed(() => {
+    if (timelineFilter.value === 'all') {
+        return props.timeline
+    }
+
+    if (timelineFilter.value === 'emails') {
+        return props.timeline.filter(item =>
+            ['proposal_sent', 'follow_up'].includes(item.type)
+        )
+    }
+
+    return props.timeline.filter(item =>
+        item.type === timelineFilter.value
+    )
+})
+
+const filterClass =
+    "px-3 py-1 border rounded text-gray-600 hover:bg-gray-100"
+
+const activeFilterClass =
+    "px-3 py-1 border rounded bg-black text-white"
+
+/*
+|--------------------------------------------------------------------------
+| MODAL TIMELINE
+|--------------------------------------------------------------------------
+*/
+
+const selectedTimelineItem = ref(null)
+const showTimelineModal = ref(false)
+
+function openTimelineModal(item) {
+    selectedTimelineItem.value = item
+    showTimelineModal.value = true
+}
+
+function closeTimelineModal() {
+    showTimelineModal.value = false
+    selectedTimelineItem.value = null
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +101,7 @@ function cancelFollowUp() {
 
     followUpForm.patch(
         `/follow-ups/${props.activeFollowUp.id}/cancel`,
+        {},
         {
             preserveScroll: true,
             onSuccess: () => {
@@ -98,7 +155,7 @@ function sendProposal(proposalId) {
 
 /*
 |--------------------------------------------------------------------------
-| ATIVIDADES RÁPIDAS
+| ATIVIDADES
 |--------------------------------------------------------------------------
 */
 
@@ -126,104 +183,100 @@ function completeActivity(id) {
         },
     })
 }
-
 </script>
 
-
 <template>
-    <CrmLayout>
-        <!-- Cabeçalho -->
-        <div class="mb-6">
-            <h1 class="text-2xl font-bold">{{ deal.title }}</h1>
+<CrmLayout>
 
-            <p class="text-sm text-gray-600 mt-1">
-                Valor: {{ deal.value ?? '—' }} €
-                · Estado: {{ deal.stage }}
-            </p>
+<!-- Cabeçalho -->
+<div class="mb-6">
+    <h1 class="text-2xl font-bold">{{ deal.title }}</h1>
 
-            <p class="text-sm mt-1">
-                <span v-if="deal.entity">Entidade: {{ deal.entity.name }}</span>
-                <span v-if="deal.person"> · Pessoa: {{ deal.person.name }}</span>
-            </p>
-        </div>
+    <p class="text-sm text-gray-600 mt-1">
+        Valor: {{ deal.value ?? '—' }} €
+        · Estado: {{ deal.stage }}
+    </p>
 
-        <!-- Upload de proposta -->
-        <section class="mb-8">
-            <h2 class="font-semibold mb-2">Adicionar proposta</h2>
+    <p class="text-sm mt-1">
+        <span v-if="deal.entity">Entidade: {{ deal.entity.name }}</span>
+        <span v-if="deal.person"> · Pessoa: {{ deal.person.name }}</span>
+    </p>
+</div>
 
-            <form @submit.prevent="uploadProposal" class="flex items-center gap-4">
-                <input
-                    type="file"
-                    @change="e => uploadForm.proposal = e.target.files[0]"
+<!-- Upload de proposta -->
+<section class="mb-8">
+    <h2 class="font-semibold mb-2">Adicionar proposta</h2>
+
+    <form @submit.prevent="uploadProposal" class="flex items-center gap-4">
+        <input
+            type="file"
+            @change="e => uploadForm.proposal = e.target.files[0]"
+        />
+
+        <button
+            class="px-4 py-2 bg-black text-white rounded"
+            :disabled="uploadForm.processing"
+        >
+            Upload
+        </button>
+    </form>
+</section>
+
+<!-- Lista de propostas -->
+<section>
+    <h2 class="font-semibold mb-3">Propostas</h2>
+
+    <ul class="space-y-4">
+        <li
+            v-for="proposal in deal.proposals"
+            :key="proposal.id"
+            class="border rounded p-4"
+        >
+            <div class="flex justify-between items-center">
+                <span class="font-medium">
+                    {{ proposal.original_name }}
+                </span>
+
+                <span
+                    v-if="proposal.sent_at"
+                    class="text-sm text-green-600"
+                >
+                    Enviado em {{ proposal.sent_at }}
+                </span>
+            </div>
+
+            <div v-if="!proposal.sent_at" class="mt-3">
+                <label class="block text-sm font-medium mb-1">
+                    Texto do email
+                </label>
+
+                <textarea
+                    v-model="emailBody"
+                    rows="4"
+                    class="w-full border rounded p-2"
                 />
 
                 <button
-                    class="px-4 py-2 bg-black text-white rounded"
-                    :disabled="uploadForm.processing"
+                    @click="sendProposal(proposal.id)"
+                    class="mt-2 px-4 py-2 bg-black text-white rounded"
+                    :disabled="sendForm.processing"
                 >
-                    Upload
+                    Enviar proposta ao cliente
                 </button>
-            </form>
-        </section>
+            </div>
+        </li>
 
-        <!-- Lista de propostas -->
-        <section>
-            <h2 class="font-semibold mb-3">Propostas</h2>
+        <li v-if="!deal.proposals.length" class="text-gray-500">
+            Ainda não existem propostas associadas a este negócio.
+        </li>
+    </ul>
+</section>
 
-            <ul class="space-y-4">
-                <li
-                    v-for="proposal in deal.proposals"
-                    :key="proposal.id"
-                    class="border rounded p-4"
-                >
-                    <div class="flex justify-between items-center">
-                        <span class="font-medium">
-                            {{ proposal.original_name }}
-                        </span>
-
-                        <span
-                            v-if="proposal.sent_at"
-                            class="text-sm text-green-600"
-                        >
-                            Enviado em {{ proposal.sent_at }}
-                        </span>
-                    </div>
-
-                    <!-- Enviar proposta -->
-                    <div v-if="!proposal.sent_at" class="mt-3">
-                        <label class="block text-sm font-medium mb-1">
-                            Texto do email
-                        </label>
-
-                        <textarea
-                            v-model="emailBody"
-                            rows="4"
-                            class="w-full border rounded p-2"
-                        />
-
-                        <button
-                            @click="sendProposal(proposal.id)"
-                            class="mt-2 px-4 py-2 bg-black text-white rounded"
-                            :disabled="sendForm.processing"
-                        >
-                            Enviar proposta ao cliente
-                        </button>
-                    </div>
-                </li>
-
-                <li v-if="!deal.proposals.length" class="text-gray-500">
-                    Ainda não existem propostas associadas a este negócio.
-                </li>
-            </ul>
-        </section>
-
-
-        <!-- ATIVIDADES RÁPIDAS -->
+<!-- ATIVIDADES -->
 <section class="mt-10 border rounded p-4 bg-gray-50">
     <h2 class="font-semibold mb-4">Nova atividade</h2>
 
     <div class="flex flex-col gap-3">
-
         <select v-model="activityForm.type" class="border p-2 rounded text-sm">
             <option value="note">Nota</option>
             <option value="call">Chamada</option>
@@ -254,15 +307,12 @@ function completeActivity(id) {
     </div>
 </section>
 
-
-
-<!-- FOLLOW-UP MANUAL -->
+<!-- FOLLOW-UP -->
 <section class="mt-10">
     <h2 class="font-semibold mb-3">Follow-up rápido</h2>
 
     <div class="flex flex-col gap-3">
 
-        <!-- Templates -->
         <select
             class="border rounded p-2 text-sm"
             @change="e => followUpForm.body = e.target.value"
@@ -277,7 +327,6 @@ function completeActivity(id) {
             </option>
         </select>
 
-        <!--  INTERVALO DE FOLLOW-UP -->
         <div>
             <label class="block text-sm font-medium mb-1">
                 Intervalo de follow-up
@@ -293,7 +342,6 @@ function completeActivity(id) {
             </select>
         </div>
 
-        <!-- Mensagem -->
         <textarea
             v-model="followUpForm.body"
             rows="3"
@@ -301,7 +349,6 @@ function completeActivity(id) {
             placeholder="Mensagem de follow-up"
         />
 
-        <!-- Enviar -->
         <button
             @click="sendFollowUp"
             class="self-start px-4 py-2 bg-black text-white rounded"
@@ -312,42 +359,40 @@ function completeActivity(id) {
     </div>
 </section>
 
-
-
-
-         <!-- CRONOLOGIA
-        <section class="mt-10">
-            <h2 class="font-semibold mb-4">Cronologia</h2>
-
-            <ul class="space-y-4">
-
-                <li class="flex gap-3">
-                    <span class="text-gray-400">✉️</span>
-                    <div>
-                        <p class="text-sm">
-                            <strong>Proposta enviada ao cliente</strong>
-                        </p>
-                        <p class="text-xs text-gray-500">
-                            Exemplo de evento (placeholder)
-                        </p>
-                    </div>
-                </li>
-            </ul>
-        </section>
--->
-
-      <!-- CRONOLOGIA -->
+<!-- CRONOLOGIA -->
 <section class="mt-10">
     <h2 class="font-semibold mb-4">Cronologia</h2>
 
-    <ul v-if="timeline.length" class="space-y-6">
+    <div class="flex flex-wrap gap-2 mb-4 text-xs">
+        <button @click="timelineFilter='all'"
+            :class="timelineFilter==='all'?activeFilterClass:filterClass">Todos</button>
 
+        <button @click="timelineFilter='note'"
+            :class="timelineFilter==='note'?activeFilterClass:filterClass">Notas</button>
+
+        <button @click="timelineFilter='call'"
+            :class="timelineFilter==='call'?activeFilterClass:filterClass">Chamadas</button>
+
+        <button @click="timelineFilter='meeting'"
+            :class="timelineFilter==='meeting'?activeFilterClass:filterClass">Reuniões</button>
+
+        <button @click="timelineFilter='task'"
+            :class="timelineFilter==='task'?activeFilterClass:filterClass">Tarefas</button>
+
+        <button @click="timelineFilter='emails'"
+            :class="timelineFilter==='emails'?activeFilterClass:filterClass">Emails</button>
+
+        <button @click="timelineFilter='stage_changed'"
+            :class="timelineFilter==='stage_changed'?activeFilterClass:filterClass">Estados</button>
+    </div>
+
+    <ul v-if="filteredTimeline.length" class="space-y-6">
         <li
-            v-for="item in timeline"
-            :key="item.type + item.date"
-            class="flex gap-4 items-start border-l-2 pl-4 pb-4"
+            v-for="item in filteredTimeline"
+            :key="item.id ?? item.type + item.date"
+            class="flex gap-4 items-start border-l-2 border-gray-200 pl-4 pb-4 cursor-pointer hover:bg-gray-50 rounded transition"
+            @click="openTimelineModal(item)"
         >
-            <!-- Ícone -->
             <div class="text-lg mt-0.5">
                 <span v-if="item.type === 'deal_created'">📌</span>
                 <span v-else-if="item.type === 'proposal_uploaded'">📄</span>
@@ -357,74 +402,54 @@ function completeActivity(id) {
                 <span v-else>•</span>
             </div>
 
-            <!-- Conteúdo -->
             <div class="flex-1">
                 <p class="text-sm font-medium">
                     {{ item.label }}
-
-                    <span v-if="item.meta?.name" class="text-gray-600">
-                        – {{ item.meta.name }}
-                    </span>
-
-                    <span
-                        v-if="item.meta?.from && item.meta?.to"
-                        class="text-gray-500"
-                    >
-                        ({{ item.meta.from }} → {{ item.meta.to }})
-                    </span>
                 </p>
 
                 <p class="text-xs text-gray-500 mt-1">
                     {{ item.user?.name ?? 'Sistema' }}
                     · {{ new Date(item.date).toLocaleString('pt-PT') }}
                 </p>
-
-                <p
-    v-if="item.meta?.body"
-    class="text-xs text-gray-600 mt-2 italic bg-gray-50 p-2 rounded"
->
-    "{{ item.meta.body }}"
-</p>
-
-<p
-    v-if="item.meta?.description"
-    class="text-xs text-gray-600 mt-2"
->
-    {{ item.meta.description }}
-</p>
-
-<p
-    v-if="item.meta?.due_at"
-    class="text-xs text-gray-500 mt-1"
->
-    Prazo: {{ new Date(item.meta.due_at).toLocaleString('pt-PT') }}
-</p>
-
-<button
-    v-if="item.type === 'task' && !item.meta?.completed_at"
-    @click="completeActivity(item.id)"
-    class="mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded"
->
-    Marcar como concluída
-</button>
-
-<p
-    v-if="item.meta?.completed_at"
-    class="text-xs text-green-600 mt-1"
->
-    Concluída em {{ new Date(item.meta.completed_at).toLocaleString('pt-PT') }}
-</p>
-
             </div>
         </li>
     </ul>
 
-    <p v-else class="text-sm text-gray-500">
-        Ainda não existem eventos na cronologia.
+    <p v-if="!filteredTimeline.length" class="text-sm text-gray-500">
+        Nenhum evento encontrado para este filtro.
     </p>
 </section>
 
+<!-- MODAL -->
+<BaseModal :show="showTimelineModal" @close="closeTimelineModal">
+    <div v-if="selectedTimelineItem">
 
+        <h3 class="text-lg font-semibold mb-4">
+            {{ selectedTimelineItem.label }}
+        </h3>
 
-    </CrmLayout>
+        <p class="text-sm text-gray-500 mb-4">
+            {{ selectedTimelineItem.user?.name ?? 'Sistema' }}
+            · {{ new Date(selectedTimelineItem.date).toLocaleString('pt-PT') }}
+        </p>
+
+        <div class="space-y-3 text-sm">
+            <pre class="bg-gray-50 p-3 rounded whitespace-pre-wrap">
+{{ selectedTimelineItem.meta }}
+            </pre>
+        </div>
+
+        <div class="mt-6 text-right">
+            <button
+                @click="closeTimelineModal"
+                class="px-4 py-2 bg-black text-white rounded"
+            >
+                Fechar
+            </button>
+        </div>
+
+    </div>
+</BaseModal>
+
+</CrmLayout>
 </template>
