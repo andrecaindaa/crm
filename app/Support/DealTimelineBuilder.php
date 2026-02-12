@@ -71,6 +71,7 @@ class DealTimelineBuilder
 foreach ($deal->activities as $activity) {
 
     $items->push([
+        'id' => $activity->id,
         'type' => $activity->type,
         'label' => $activity->label,
         'date' => $activity->created_at,
