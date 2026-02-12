@@ -95,6 +95,38 @@ function sendProposal(proposalId) {
         },
     })
 }
+
+/*
+|--------------------------------------------------------------------------
+| ATIVIDADES RÁPIDAS
+|--------------------------------------------------------------------------
+*/
+
+const activityForm = useForm({
+    type: 'note',
+    description: '',
+    due_at: null,
+})
+
+function createActivity() {
+    activityForm.post(`/deals/${props.deal.id}/activities`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            activityForm.reset()
+            router.reload({ only: ['timeline'] })
+        },
+    })
+}
+
+function completeActivity(id) {
+    router.patch(`/activities/${id}/complete`, {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            router.reload({ only: ['timeline'] })
+        },
+    })
+}
+
 </script>
 
 
@@ -184,6 +216,44 @@ function sendProposal(proposalId) {
                 </li>
             </ul>
         </section>
+
+
+        <!-- ATIVIDADES RÁPIDAS -->
+<section class="mt-10 border rounded p-4 bg-gray-50">
+    <h2 class="font-semibold mb-4">Nova atividade</h2>
+
+    <div class="flex flex-col gap-3">
+
+        <select v-model="activityForm.type" class="border p-2 rounded text-sm">
+            <option value="note">Nota</option>
+            <option value="call">Chamada</option>
+            <option value="meeting">Reunião</option>
+            <option value="task">Tarefa</option>
+        </select>
+
+        <textarea
+            v-model="activityForm.description"
+            rows="3"
+            class="border p-2 rounded text-sm"
+            placeholder="Descrição"
+        />
+
+        <input
+            type="datetime-local"
+            v-model="activityForm.due_at"
+            class="border p-2 rounded text-sm"
+        />
+
+        <button
+            @click="createActivity"
+            class="self-start px-4 py-2 bg-black text-white rounded text-sm"
+            :disabled="activityForm.processing || !activityForm.description"
+        >
+            Guardar atividade
+        </button>
+    </div>
+</section>
+
 
 
 <!-- FOLLOW-UP MANUAL -->
@@ -310,11 +380,41 @@ function sendProposal(proposalId) {
                 </p>
 
                 <p
-                    v-if="item.meta?.body"
-                    class="text-xs text-gray-600 mt-2 italic bg-gray-50 p-2 rounded"
-                >
-                    "{{ item.meta.body }}"
-                </p>
+    v-if="item.meta?.body"
+    class="text-xs text-gray-600 mt-2 italic bg-gray-50 p-2 rounded"
+>
+    "{{ item.meta.body }}"
+</p>
+
+<p
+    v-if="item.meta?.description"
+    class="text-xs text-gray-600 mt-2"
+>
+    {{ item.meta.description }}
+</p>
+
+<p
+    v-if="item.meta?.due_at"
+    class="text-xs text-gray-500 mt-1"
+>
+    Prazo: {{ new Date(item.meta.due_at).toLocaleString('pt-PT') }}
+</p>
+
+<button
+    v-if="item.type === 'task' && !item.meta?.completed_at"
+    @click="completeActivity(item.id)"
+    class="mt-2 text-xs bg-green-600 text-white px-2 py-1 rounded"
+>
+    Marcar como concluída
+</button>
+
+<p
+    v-if="item.meta?.completed_at"
+    class="text-xs text-green-600 mt-1"
+>
+    Concluída em {{ new Date(item.meta.completed_at).toLocaleString('pt-PT') }}
+</p>
+
             </div>
         </li>
     </ul>
