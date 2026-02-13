@@ -18,6 +18,13 @@ class SendDealFollowUpEmail implements ShouldQueue
 
     public function handle()
     {
+        if (! now()->between(
+    now()->setTime(9, 0),
+            now()->setTime(18, 0)
+        )) {
+            return;
+        }
+
         if (! $this->followUp->active) {
             return;
         }

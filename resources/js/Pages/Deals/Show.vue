@@ -1,7 +1,7 @@
 <script setup>
 import CrmLayout from '@/Layouts/CrmLayout.vue'
 import BaseModal from '@/Components/BaseModal.vue'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useForm, usePage, router } from '@inertiajs/vue3'
 import axios from 'axios'
 
@@ -15,9 +15,50 @@ const props = defineProps({
     deal: Object,
     timeline: Array,
     activeFollowUp: Object,
+    productsList: Array,
 })
 
 const user = usePage().props.auth.user
+
+/*
+|--------------------------------------------------------------------------
+| PRODUTOS - MODAL
+|--------------------------------------------------------------------------
+*/
+
+const showProductModal = ref(false)
+
+const productForm = useForm({
+    product_id: '',
+    quantity: 1,
+    unit_price: 0,
+})
+
+// Watch para atualizar preço quando produto selecionado
+const updateProductPrice = (id) => {
+    const selected = props.productsList?.find(p => Number(p.id) === Number(id))
+    if (selected) {
+        productForm.unit_price = selected.price
+    }
+}
+
+// Função para calcular total
+const calculatedTotal = () => {
+    const quantity = Number(productForm.quantity) || 0
+    const price = Number(productForm.unit_price) || 0
+    return (quantity * price).toFixed(2)
+}
+
+function attachProduct() {
+    productForm.post(`/deals/${props.deal.id}/products`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showProductModal.value = false
+            productForm.reset()
+            router.reload({ only: ['deal', 'timeline'] })
+        }
+    })
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -27,11 +68,9 @@ const user = usePage().props.auth.user
 
 const timelineFilter = ref('all')
 
-watch(() => props.deal.id, () => {
-    timelineFilter.value = 'all'
-})
+const filteredTimeline = () => {
+    if (!props.timeline) return []
 
-const filteredTimeline = computed(() => {
     if (timelineFilter.value === 'all') {
         return props.timeline
     }
@@ -45,13 +84,10 @@ const filteredTimeline = computed(() => {
     return props.timeline.filter(item =>
         item.type === timelineFilter.value
     )
-})
+}
 
-const filterClass =
-    "px-3 py-1 border rounded text-gray-600 hover:bg-gray-100"
-
-const activeFilterClass =
-    "px-3 py-1 border rounded bg-black text-white"
+const filterClass = "px-3 py-1 border rounded text-gray-600 hover:bg-gray-100"
+const activeFilterClass = "px-3 py-1 border rounded bg-black text-white"
 
 /*
 |--------------------------------------------------------------------------
@@ -86,8 +122,12 @@ const followUpForm = useForm({
 })
 
 onMounted(async () => {
-    const { data } = await axios.get('/follow-ups/templates')
-    followUpTemplates.value = data
+    try {
+        const { data } = await axios.get('/follow-ups/templates')
+        followUpTemplates.value = data
+    } catch (error) {
+        console.error('Erro ao carregar templates:', error)
+    }
 })
 
 function sendFollowUp() {
@@ -128,6 +168,9 @@ const uploadForm = useForm({
 function uploadProposal() {
     uploadForm.post(`/deals/${props.deal.id}/proposals`, {
         forceFormData: true,
+        onSuccess: () => {
+            router.reload({ only: ['deal', 'timeline'] })
+        }
     })
 }
 
@@ -178,24 +221,42 @@ function createActivity() {
         },
     })
 }
-</script>
 
+/*
+|--------------------------------------------------------------------------
+| FORMATAR DATA
+|--------------------------------------------------------------------------
+*/
+
+function formatDate(dateString) {
+    if (!dateString) return ''
+
+    const date = new Date(dateString)
+    return date.toLocaleString('pt-PT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })
+}
+</script>
 
 <template>
 <CrmLayout>
 
 <!-- Cabeçalho -->
 <div class="mb-6">
-    <h1 class="text-2xl font-bold">{{ deal.title }}</h1>
+    <h1 class="text-2xl font-bold">{{ deal?.title }}</h1>
 
     <p class="text-sm text-gray-600 mt-1">
-        Valor: {{ deal.value ?? '—' }} €
-        · Estado: {{ deal.stage }}
+        Valor: {{ deal?.value ?? '—' }} €
+        · Estado: {{ deal?.stage }}
     </p>
 
     <p class="text-sm mt-1">
-        <span v-if="deal.entity">Entidade: {{ deal.entity.name }}</span>
-        <span v-if="deal.person"> · Pessoa: {{ deal.person.name }}</span>
+        <span v-if="deal?.entity">Entidade: {{ deal.entity.name }}</span>
+        <span v-if="deal?.person"> · Pessoa: {{ deal.person.name }}</span>
     </p>
 </div>
 
@@ -206,11 +267,12 @@ function createActivity() {
     <form @submit.prevent="uploadProposal" class="flex items-center gap-4">
         <input
             type="file"
-            @change="e => uploadForm.proposal = e.target.files[0]"
+            @change="e => uploadForm.proposal = e.target.files?.[0]"
+            class="border rounded p-1"
         />
 
         <button
-            class="px-4 py-2 bg-black text-white rounded"
+            class="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
             :disabled="uploadForm.processing"
         >
             Upload
@@ -219,12 +281,12 @@ function createActivity() {
 </section>
 
 <!-- Lista de propostas -->
-<section>
+<section class="mb-8">
     <h2 class="font-semibold mb-3">Propostas</h2>
 
     <ul class="space-y-4">
         <li
-            v-for="proposal in deal.proposals"
+            v-for="proposal in deal?.proposals || []"
             :key="proposal.id"
             class="border rounded p-4"
         >
@@ -237,7 +299,7 @@ function createActivity() {
                     v-if="proposal.sent_at"
                     class="text-sm text-green-600"
                 >
-                    Enviado em {{ proposal.sent_at }}
+                    Enviado em {{ formatDate(proposal.sent_at) }}
                 </span>
             </div>
 
@@ -254,7 +316,7 @@ function createActivity() {
 
                 <button
                     @click="sendProposal(proposal.id)"
-                    class="mt-2 px-4 py-2 bg-black text-white rounded"
+                    class="mt-2 px-4 py-2 bg-black text-white rounded disabled:opacity-50"
                     :disabled="sendForm.processing"
                 >
                     Enviar proposta ao cliente
@@ -262,14 +324,40 @@ function createActivity() {
             </div>
         </li>
 
-        <li v-if="!deal.proposals.length" class="text-gray-500">
+        <li v-if="!deal?.proposals?.length" class="text-gray-500">
             Ainda não existem propostas associadas a este negócio.
         </li>
     </ul>
 </section>
 
+<!-- PRODUTOS -->
+<section class="mb-8 border rounded p-4">
+    <div class="flex justify-between items-center mb-3">
+        <h2 class="font-semibold">Produtos</h2>
+
+        <button
+            @click="showProductModal = true"
+            class="px-3 py-1 bg-black text-white text-sm rounded"
+        >
+            + Adicionar Produto
+        </button>
+    </div>
+
+    <ul v-if="deal?.products?.length" class="space-y-2">
+        <li v-for="product in deal.products" :key="product.id" class="text-sm">
+            {{ product.name }}
+            · {{ product.pivot.quantity }} x {{ product.pivot.unit_price }}€
+            = {{ product.pivot.total }}€
+        </li>
+    </ul>
+
+    <p v-else class="text-sm text-gray-500">
+        Nenhum produto associado.
+    </p>
+</section>
+
 <!-- ATIVIDADES -->
-<section class="mt-10 border rounded p-4 bg-gray-50">
+<section class="mb-8 border rounded p-4 bg-gray-50">
     <h2 class="font-semibold mb-4">Nova atividade</h2>
 
     <div class="flex flex-col gap-3">
@@ -295,7 +383,7 @@ function createActivity() {
 
         <button
             @click="createActivity"
-            class="self-start px-4 py-2 bg-black text-white rounded text-sm"
+            class="self-start px-4 py-2 bg-black text-white rounded text-sm disabled:opacity-50"
             :disabled="activityForm.processing || !activityForm.description"
         >
             Guardar atividade
@@ -304,11 +392,10 @@ function createActivity() {
 </section>
 
 <!-- FOLLOW-UP -->
-<section class="mt-10">
+<section class="mb-8">
     <h2 class="font-semibold mb-3">Follow-up rápido</h2>
 
     <div class="flex flex-col gap-3">
-
         <select
             class="border rounded p-2 text-sm"
             @change="e => followUpForm.body = e.target.value"
@@ -347,7 +434,7 @@ function createActivity() {
 
         <button
             @click="sendFollowUp"
-            class="self-start px-4 py-2 bg-black text-white rounded"
+            class="self-start px-4 py-2 bg-black text-white rounded disabled:opacity-50"
             :disabled="followUpForm.processing || !followUpForm.body"
         >
             Enviar follow-up
@@ -370,10 +457,10 @@ function createActivity() {
         <button @click="timelineFilter='stage_changed'" :class="timelineFilter==='stage_changed'?activeFilterClass:filterClass">Estados</button>
     </div>
 
-    <ul v-if="filteredTimeline.length" class="space-y-6">
+    <ul v-if="filteredTimeline().length" class="space-y-6">
         <li
-            v-for="item in filteredTimeline"
-            :key="item.id ?? item.type + item.date"
+            v-for="(item, index) in filteredTimeline()"
+            :key="item.id ?? item.type + index"
             class="flex gap-4 items-start border-l-2 border-gray-200 pl-4 pb-4 cursor-pointer hover:bg-gray-50 rounded transition"
             @click="openTimelineModal(item)"
         >
@@ -388,7 +475,6 @@ function createActivity() {
                 <span v-else-if="item.type === 'meeting'">📅</span>
                 <span v-else-if="item.type === 'task'">✅</span>
                 <span v-else-if="item.type === 'system_inactive'">⚠️</span>
-
                 <span v-else>•</span>
             </div>
 
@@ -396,34 +482,32 @@ function createActivity() {
                 <p class="text-sm font-medium">{{ item.label }}</p>
                 <p class="text-xs text-gray-500">
                     {{ item.user?.name ?? 'Sistema' }}
-                    · {{ new Date(item.date).toLocaleString('pt-PT') }}
+                    · {{ formatDate(item.date) }}
                 </p>
             </div>
         </li>
     </ul>
 
-    <p v-if="!filteredTimeline.length" class="text-sm text-gray-500">
+    <p v-if="!filteredTimeline().length" class="text-sm text-gray-500">
         Nenhum evento encontrado para este filtro.
     </p>
 </section>
 
-
-<!-- MODAL -->
+<!-- MODAL TIMELINE -->
 <BaseModal :show="showTimelineModal" @close="closeTimelineModal">
-    <div v-if="selectedTimelineItem">
-
+    <div v-if="selectedTimelineItem" class="space-y-4">
         <h3 class="text-lg font-semibold mb-4">
             {{ selectedTimelineItem.label }}
         </h3>
 
         <p class="text-sm text-gray-500 mb-4">
             {{ selectedTimelineItem.user?.name ?? 'Sistema' }}
-            · {{ new Date(selectedTimelineItem.date).toLocaleString('pt-PT') }}
+            · {{ formatDate(selectedTimelineItem.date) }}
         </p>
 
         <div class="space-y-3 text-sm">
-            <pre class="bg-gray-50 p-3 rounded whitespace-pre-wrap">
-{{ selectedTimelineItem.meta }}
+            <pre v-if="selectedTimelineItem.meta" class="bg-gray-50 p-3 rounded whitespace-pre-wrap">
+{{ JSON.stringify(selectedTimelineItem.meta, null, 2) }}
             </pre>
         </div>
 
@@ -435,7 +519,61 @@ function createActivity() {
                 Fechar
             </button>
         </div>
+    </div>
+</BaseModal>
 
+<!-- MODAL PRODUTOS -->
+<BaseModal :show="showProductModal" @close="showProductModal=false">
+    <div class="space-y-4">
+        <h3 class="text-lg font-semibold">Adicionar Produto</h3>
+
+        <select
+            v-model="productForm.product_id"
+            class="w-full border p-2 rounded"
+            @change="updateProductPrice(productForm.product_id)"
+        >
+            <option disabled value="">Selecionar produto</option>
+            <option v-for="p in productsList" :key="p.id" :value="p.id">
+                {{ p.name }} ({{ p.price }}€)
+            </option>
+        </select>
+
+        <input
+            type="number"
+            min="1"
+            v-model="productForm.quantity"
+            class="w-full border p-2 rounded"
+            placeholder="Quantidade"
+        />
+
+        <input
+            type="number"
+            step="0.01"
+            v-model="productForm.unit_price"
+            class="w-full border p-2 rounded"
+            placeholder="Preço unitário"
+        />
+
+        <div class="text-sm text-gray-600">
+            Total: <strong>{{ calculatedTotal() }}€</strong>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <button
+                @click="showProductModal=false"
+                class="px-4 py-2 border rounded"
+            >
+                Cancelar
+            </button>
+
+            <button
+                @click="attachProduct"
+                class="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
+                :disabled="productForm.processing"
+            >
+                Guardar
+            </button>
+        </div>
     </div>
 </BaseModal>
 

@@ -83,6 +83,13 @@ Route::post('/deals/{deal}/activities', [DealActivityController::class, 'store']
 Route::patch('/activities/{activity}/complete', [DealActivityController::class, 'complete'])
     ->name('activities.complete');
 
+        /*
+| Product
+*/
+
+    Route::post('/deals/{deal}/products', [DealController::class, 'attachProduct'])
+    ->name('deals.products.attach');
+
 
 
     /*

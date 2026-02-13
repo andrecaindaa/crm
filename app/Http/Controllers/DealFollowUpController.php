@@ -50,4 +50,16 @@ class DealFollowUpController extends Controller
 
         return back();
     }
+
+    public function cancel(DealFollowUp $followUp)
+    {
+        $this->authorize('update', $followUp->deal);
+
+        $followUp->update([
+            'active' => false,
+        ]);
+
+        return back();
+    }
+
 }

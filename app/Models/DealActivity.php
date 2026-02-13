@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DealActivity extends Model
 {
-    public $timestamps = false;
+    //public $timestamps = false;
 
     protected $fillable = [
         'deal_id',
@@ -17,7 +17,7 @@ class DealActivity extends Model
         'meta',
         'due_at',
         'completed_at',
-        'created_at',
+        //'created_at',
     ];
 
     protected $casts = [

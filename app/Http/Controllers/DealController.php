@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Support\DealTimelineBuilder;
 use App\Models\DealActivity;
+use App\Models\Product;
+
 
 class DealController extends Controller
 {
@@ -32,6 +34,8 @@ class DealController extends Controller
     public function show(Deal $deal)
     {
         $this->authorize('view', $deal);
+        $products = Product::orderBy('name')->get();
+
 
         $deal->load([
             'entity',
@@ -40,6 +44,7 @@ class DealController extends Controller
             'proposals.sender',
             'followUps.sender',
             'activities.user',
+            'products',
         ]);
 
     $activeFollowUp = $deal->followUps()
@@ -51,6 +56,7 @@ class DealController extends Controller
             'deal' => $deal,
             'timeline' => DealTimelineBuilder::build($deal),
             'activeFollowUp' => $activeFollowUp,
+            'productsList' => $products,
         ]);
     }
 
@@ -85,34 +91,66 @@ class DealController extends Controller
     }
 
    public function updateStage(Request $request, Deal $deal)
-{
-    $this->authorize('update', $deal);
+    {
+        $this->authorize('update', $deal);
 
-    $data = $request->validate([
-        'stage' => 'required|string|in:' . implode(',', array_keys(Deal::stages())),
-    ]);
+        $data = $request->validate([
+            'stage' => 'required|string|in:' . implode(',', array_keys(Deal::stages())),
+        ]);
 
-    if ($deal->stage === $data['stage']) {
+        if ($deal->stage === $data['stage']) {
+            return back();
+        }
+
+        $oldStage = $deal->stage;
+
+        $deal->update($data);
+
+        DealActivity::create([
+            'deal_id' => $deal->id,
+            'user_id' => auth()->id(),
+            'type' => 'stage_changed',
+            'label' => 'Estado alterado',
+            'meta' => [
+                'from' => $oldStage,
+                'to' => $data['stage'],
+            ],
+            'created_at' => now(),
+        ]);
+
         return back();
     }
 
-    $oldStage = $deal->stage;
+    public function attachProduct(Request $request, Deal $deal)
+    {
+        $this->authorize('update', $deal);
 
-    $deal->update($data);
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'unit_price' => 'required|numeric|min:0',
+        ]);
 
-    DealActivity::create([
-        'deal_id' => $deal->id,
-        'user_id' => auth()->id(),
-        'type' => 'stage_changed',
-        'label' => 'Estado alterado',
-        'meta' => [
-            'from' => $oldStage,
-            'to' => $data['stage'],
-        ],
-        'created_at' => now(),
-    ]);
+        $total = $validated['quantity'] * $validated['unit_price'];
 
-    return back();
-}
+        $deal->products()->attach($validated['product_id'], [
+            'quantity' => $validated['quantity'],
+            'unit_price' => $validated['unit_price'],
+            'total' => $total,
+        ]);
+
+        // atividade automática
+        $product = Product::find($validated['product_id']);
+
+        DealActivity::create([
+            'deal_id' => $deal->id,
+            'user_id' => auth()->id(),
+            'type' => 'product_added',
+            'label' => 'Produto adicionado',
+            'description' => "{$product->name} ({$validated['quantity']}x)",
+        ]);
+
+        return back();
+    }
 
 }

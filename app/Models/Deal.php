@@ -29,6 +29,19 @@ class Deal extends Model
 
         return $dates->max();
     }
+    protected $casts = [
+        'expected_close_date' => 'date',
+        'value' => 'decimal:2',
+    ];
+
+    public function products()
+    {
+
+        return $this->belongsToMany(Product::class, 'deal_products')
+            ->withPivot(['quantity', 'unit_price', 'total'])
+            ->withTimestamps();
+    }
+
 
 
     public function entity()
