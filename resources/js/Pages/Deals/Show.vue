@@ -1,7 +1,7 @@
 <script setup>
 import CrmLayout from '@/Layouts/CrmLayout.vue'
 import BaseModal from '@/Components/BaseModal.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useForm, usePage, router } from '@inertiajs/vue3'
 import axios from 'axios'
 
@@ -26,6 +26,10 @@ const user = usePage().props.auth.user
 */
 
 const timelineFilter = ref('all')
+
+watch(() => props.deal.id, () => {
+    timelineFilter.value = 'all'
+})
 
 const filteredTimeline = computed(() => {
     if (timelineFilter.value === 'all') {
@@ -174,16 +178,8 @@ function createActivity() {
         },
     })
 }
-
-function completeActivity(id) {
-    router.patch(`/activities/${id}/complete`, {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-            router.reload({ only: ['timeline'] })
-        },
-    })
-}
 </script>
+
 
 <template>
 <CrmLayout>
@@ -363,27 +359,15 @@ function completeActivity(id) {
 <section class="mt-10">
     <h2 class="font-semibold mb-4">Cronologia</h2>
 
+    <!-- FILTROS -->
     <div class="flex flex-wrap gap-2 mb-4 text-xs">
-        <button @click="timelineFilter='all'"
-            :class="timelineFilter==='all'?activeFilterClass:filterClass">Todos</button>
-
-        <button @click="timelineFilter='note'"
-            :class="timelineFilter==='note'?activeFilterClass:filterClass">Notas</button>
-
-        <button @click="timelineFilter='call'"
-            :class="timelineFilter==='call'?activeFilterClass:filterClass">Chamadas</button>
-
-        <button @click="timelineFilter='meeting'"
-            :class="timelineFilter==='meeting'?activeFilterClass:filterClass">Reuniões</button>
-
-        <button @click="timelineFilter='task'"
-            :class="timelineFilter==='task'?activeFilterClass:filterClass">Tarefas</button>
-
-        <button @click="timelineFilter='emails'"
-            :class="timelineFilter==='emails'?activeFilterClass:filterClass">Emails</button>
-
-        <button @click="timelineFilter='stage_changed'"
-            :class="timelineFilter==='stage_changed'?activeFilterClass:filterClass">Estados</button>
+        <button @click="timelineFilter='all'" :class="timelineFilter==='all'?activeFilterClass:filterClass">Todos</button>
+        <button @click="timelineFilter='note'" :class="timelineFilter==='note'?activeFilterClass:filterClass">Notas</button>
+        <button @click="timelineFilter='call'" :class="timelineFilter==='call'?activeFilterClass:filterClass">Chamadas</button>
+        <button @click="timelineFilter='meeting'" :class="timelineFilter==='meeting'?activeFilterClass:filterClass">Reuniões</button>
+        <button @click="timelineFilter='task'" :class="timelineFilter==='task'?activeFilterClass:filterClass">Tarefas</button>
+        <button @click="timelineFilter='emails'" :class="timelineFilter==='emails'?activeFilterClass:filterClass">Emails</button>
+        <button @click="timelineFilter='stage_changed'" :class="timelineFilter==='stage_changed'?activeFilterClass:filterClass">Estados</button>
     </div>
 
     <ul v-if="filteredTimeline.length" class="space-y-6">
@@ -399,15 +383,18 @@ function completeActivity(id) {
                 <span v-else-if="item.type === 'proposal_sent'">✉️</span>
                 <span v-else-if="item.type === 'follow_up'">🔁</span>
                 <span v-else-if="item.type === 'stage_changed'">🔄</span>
+                <span v-else-if="item.type === 'note'">📝</span>
+                <span v-else-if="item.type === 'call'">📞</span>
+                <span v-else-if="item.type === 'meeting'">📅</span>
+                <span v-else-if="item.type === 'task'">✅</span>
+                <span v-else-if="item.type === 'system_inactive'">⚠️</span>
+
                 <span v-else>•</span>
             </div>
 
-            <div class="flex-1">
-                <p class="text-sm font-medium">
-                    {{ item.label }}
-                </p>
-
-                <p class="text-xs text-gray-500 mt-1">
+            <div>
+                <p class="text-sm font-medium">{{ item.label }}</p>
+                <p class="text-xs text-gray-500">
                     {{ item.user?.name ?? 'Sistema' }}
                     · {{ new Date(item.date).toLocaleString('pt-PT') }}
                 </p>
@@ -419,6 +406,7 @@ function completeActivity(id) {
         Nenhum evento encontrado para este filtro.
     </p>
 </section>
+
 
 <!-- MODAL -->
 <BaseModal :show="showTimelineModal" @close="closeTimelineModal">

@@ -17,6 +17,20 @@ class Deal extends Model
         'expected_close_date',
     ];
 
+    public function lastActivityAt(): ?\Carbon\Carbon
+    {
+        $dates = collect([
+            $this->created_at,
+            $this->proposals()->max('created_at'),
+            $this->proposals()->max('sent_at'),
+            $this->followUps()->max('sent_at'),
+            $this->activities()->max('created_at'),
+        ])->filter();
+
+        return $dates->max();
+    }
+
+
     public function entity()
     {
         return $this->belongsTo(Entity::class);
