@@ -12,6 +12,7 @@ use App\Http\Controllers\DealProposalController;
 use App\Http\Controllers\CalendarEventController;
 use App\Http\Controllers\DealFollowUpController;
 use App\Http\Controllers\DealActivityController;
+use App\Http\Controllers\DashboardController;
 
 
 
@@ -39,9 +40,9 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     | Dashboard
-    */
+
     Route::get('/dashboard', fn () => Inertia::render('Dashboard'))
-        ->name('dashboard');
+        ->name('dashboard'); */
 
     /*
     | Deals (Negócios)
@@ -90,6 +91,10 @@ Route::patch('/activities/{activity}/complete', [DealActivityController::class, 
     Route::post('/deals/{deal}/products', [DealController::class, 'attachProduct'])
     ->name('deals.products.attach');
 
+
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->name('dashboard');
 
 
     /*

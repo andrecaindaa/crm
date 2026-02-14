@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Deal extends Model
 {
@@ -17,18 +18,55 @@ class Deal extends Model
         'expected_close_date',
     ];
 
-    public function lastActivityAt(): ?\Carbon\Carbon
+    /**
+     * Obtém a data da última atividade do negócio
+     */
+    public function lastActivityAt(): ?Carbon
     {
         $dates = collect([
             $this->created_at,
             $this->proposals()->max('created_at'),
             $this->proposals()->max('sent_at'),
             $this->followUps()->max('sent_at'),
-            $this->activities()->max('created_at'),
-        ])->filter();
+            $this->activities()
+                ->where('type', '!=', 'system_inactive')
+                ->max('created_at'),
+        ])
+        ->filter()
+        ->map(function ($date) {
+            // Converter strings para Carbon se necessário
+            if (is_string($date)) {
+                return Carbon::parse($date);
+            }
+            return $date;
+        });
 
-        return $dates->max();
+        $maxDate = $dates->max();
+
+        // Garantir que retorna Carbon ou null
+       return $maxDate instanceof Carbon
+    ? $maxDate
+    : ($maxDate ? Carbon::parse($maxDate) : null);
+
     }
+
+    /**
+     * Dias desde a última atividade
+     */
+    public function getInactiveDaysAttribute(): int
+    {
+        $lastActivity = $this->lastActivityAt();
+        return $lastActivity ? $lastActivity->diffInDays(now()) : 0;
+    }
+
+    /**
+     * Verifica se o negócio está inativo
+     */
+    public function isInactive(int $threshold = 5): bool
+    {
+        return $this->inactive_days >= $threshold;
+    }
+
     protected $casts = [
         'expected_close_date' => 'date',
         'value' => 'decimal:2',
@@ -84,5 +122,18 @@ class Deal extends Model
     {
         return $this->hasMany(DealActivity::class);
     }
+
+    public function getRiskScoreAttribute(): int
+    {
+        $score = 0;
+
+        if ($this->inactive_days >= 5) $score += 40;
+        if ($this->stage === 'negotiation') $score += 20;
+        if ($this->value > 5000) $score += 20;
+        if ($this->followUps()->where('active', true)->exists()) $score -= 10;
+
+        return max(0, min(100, $score));
+    }
+
 
 }

@@ -27,7 +27,15 @@ import { Link } from '@inertiajs/vue3'
                     Calendário
                 </Link>
             </nav>
+
+            <span v-if="$page.props.auth.user.notifications?.length"
+                class="bg-red-500 text-white text-xs px-2 py-1 rounded">
+                {{ $page.props.auth.user.notifications.length }}
+            </span>
         </aside>
+
+
+
 
         <!-- Main content -->
         <main class="flex-1 p-6">
